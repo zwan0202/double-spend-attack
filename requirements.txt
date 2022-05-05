@@ -1,0 +1,4 @@
+flask~=2.0.3
+flask_cors~=3.0.10
+requests~=2.27.1
+cryptography~=36.0.0
