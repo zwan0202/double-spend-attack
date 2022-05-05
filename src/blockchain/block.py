@@ -1,6 +1,6 @@
 import time
-import double_spend_attack.util as util
-from double_spend_attack.constant import DIFFICULTY, MINE_RATE
+import src.util as util
+from src.constant import DIFFICULTY, MINE_RATE
 
 GENESIS_DATA = {
     'timestamp': 0,

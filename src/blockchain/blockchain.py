@@ -1,7 +1,5 @@
-import socket
-from urllib.parse import urlparse
-from double_spend_attack.blockchain.block import Block
-from double_spend_attack.wallet.transaction import Transaction
+from src.blockchain.block import Block
+from src.wallet.transaction import Transaction
 
 class Blockchain:
 

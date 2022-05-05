@@ -12,9 +12,10 @@ import requests
 from random import randint
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from double_spend_attack.blockchain.blockchain import Blockchain, Block
-from double_spend_attack.util import is_port_in_use
-from double_spend_attack.constant import HOST
+from src.blockchain.blockchain import Blockchain
+from src.blockchain.block import Block
+from src.util import is_port_in_use
+from src.constant import HOST
 
 app = Flask(__name__)
 CORS(app)

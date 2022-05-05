@@ -14,10 +14,11 @@ from random import choice
 from threading import Thread, Event
 from flask import Flask
 from flask_cors import CORS
-from double_spend_attack.blockchain.blockchain import Blockchain, Block
-from double_spend_attack.wallet.wallet import Wallet
-from double_spend_attack.wallet.transaction import (Transaction, TransactionPool)
-from double_spend_attack.constant import HOST, TEMP_STORAGE_PORT, MINING_REWARD_INPUT
+from src.blockchain.blockchain import Blockchain
+from src.blockchain.block import Block
+from src.wallet.wallet import Wallet
+from src.wallet.transaction import (Transaction, TransactionPool)
+from src.constant import HOST, TEMP_STORAGE_PORT, MINING_REWARD_INPUT
 
 
 app = Flask(__name__)

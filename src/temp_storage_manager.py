@@ -11,8 +11,9 @@ sys.path.append(absolute_path)
 import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from double_spend_attack.blockchain.blockchain import Blockchain, Block
-from double_spend_attack.constant import HOST
+from src.blockchain.blockchain import Blockchain
+from src.blockchain.block import Block
+from src.constant import HOST
 
 
 app = Flask(__name__)

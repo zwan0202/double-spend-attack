@@ -1,7 +1,7 @@
 import time
 import uuid
-from double_spend_attack.wallet.wallet import Wallet
-from double_spend_attack.constant import MINING_REWARD, MINING_REWARD_INPUT
+from src.wallet.wallet import Wallet
+from src.constant import MINING_REWARD, MINING_REWARD_INPUT
 
 class Transaction:
 

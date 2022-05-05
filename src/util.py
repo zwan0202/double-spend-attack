@@ -1,7 +1,7 @@
 import hashlib
 import json
 import socket
-from double_spend_attack.constant import HOST
+from src.constant import HOST
 
 HEX_TO_BINARY_CONVERSION_TABLE = {
     '0': '0000',
