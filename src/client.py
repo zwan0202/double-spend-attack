@@ -8,6 +8,7 @@ path = Path(myDir)
 absolute_path = str(path.parent.absolute())
 sys.path.append(absolute_path)
 
+import time
 import requests
 import logging
 from random import choice
@@ -18,7 +19,7 @@ from src.blockchain.blockchain import Blockchain
 from src.blockchain.block import Block
 from src.wallet.wallet import Wallet
 from src.wallet.transaction import (Transaction, TransactionPool)
-from src.constant import HOST, TEMP_STORAGE_PORT, MINING_REWARD_INPUT
+from src.constant import HOST, TEMP_STORAGE_PORT, MINING_REWARD_INPUT, HOUR, DSA_TIMEOUT
 
 
 app = Flask(__name__)
@@ -27,9 +28,12 @@ log = logging.getLogger('werkzeug')
 log.disabled = True
 port = ''
 role = ''
+dsa_success = 0
+dsa_count = 0
 transaction_pool = TransactionPool()
 wallet = Wallet()
 exit_event = Event()
+threads = {}
 
 
 def main_menu():
@@ -50,12 +54,12 @@ def main_menu():
         execute_menu(input(' >> '))
 
 
-def execute_menu(choice):
-    if choice == '':
+def execute_menu(m_choice):
+    if m_choice == '':
         return
     else:
         try:
-            menu_actions[choice]()
+            menu_actions[m_choice]()
         except KeyError:
             print('Invalid choice')
         return
@@ -86,18 +90,21 @@ def all_ports():
         return []
 
 
-def mine():
+def mine(tran_pool=None):
+    if not tran_pool:
+        tran_pool = transaction_pool
+
     added = False
     while not added:
         blockchain_json, len = get_blockchain()
         blockchain = Blockchain.from_json(blockchain_json)
-        reward_transaction, exist = transaction_pool.find_transaction(MINING_REWARD_INPUT['address'])
+        reward_transaction, exist = tran_pool.find_transaction(MINING_REWARD_INPUT['address'])
 
         if not exist:
             reward_transaction = Transaction.reward_transaction(wallet.address)
-            transaction_pool.add_transaction(reward_transaction)
+            tran_pool.add_transaction(reward_transaction)
 
-        transactions = transaction_pool.all_transactions()
+        transactions = tran_pool.all_transactions()
 
         potential_block = Block.mine_block(blockchain.chain[-1], transactions, wallet.public_key)
 
@@ -111,7 +118,7 @@ def mine():
             break
 
     print(potential_block_json)
-    transaction_pool.clear_transactions()
+    tran_pool.clear_transactions()
 
     return
 
@@ -130,6 +137,7 @@ def broadcast_blockchain():
 def start_auto_mine():
     exit_event.clear()
     thread = Thread(target=auto_mine_thread, daemon=True)
+    threads['auto_mine'] = thread
     thread.start()
 
 
@@ -143,6 +151,8 @@ def auto_mine_thread():
 
 def stop_auto_mine():
     exit_event.set()
+    thread = threads['auto_mine']
+    thread.join()
     print('====== Auto Mine Stopped ======')
 
 
@@ -171,20 +181,45 @@ def get_fork_blockchain():
     return None
 
 
+def is_timeout(start_time, curr_time, timeout):
+    duration = curr_time - start_time
+    if duration > timeout:
+        print('====== DSA Timeout =======')
+        return True
+    else:
+        return False
+
+
 def double_spend_attack():
-    if not get_fork_blockchain():
-        dsa_transaction()
-        fork_blockchain()
+    attack_start_time = time.time()
+    timeout = is_timeout(attack_start_time, time.time(), HOUR)
 
-    # if forked:
-    #     thread = Thread(target=dsa_transaction, daemon=True)
-    #     thread.start()
+    global dsa_count, dsa_success
+    dsa_count = 0
+    dsa_success = 0
 
-    following_dsa = dsa_auto_mine()
+    while not timeout:
+        if not get_fork_blockchain():
+            dsa_transaction()
+            fork_blockchain()
 
-    if not following_dsa:
-        dsa_broadcast_fork_chain()
-        clear_fork_chain()
+        following_dsa = dsa_auto_mine(attack_start_time)
+
+        if not following_dsa:
+            dsa_broadcast_fork_chain()
+            clear_fork_chain()
+            set_dsa_success_false()
+
+        dsa_count += 1
+        timeout = is_timeout(attack_start_time, time.time(), HOUR)
+
+    dsa_success_rate = round(dsa_success / dsa_count * 100, 2)
+    print(f'\n================\n'
+          f'=  DSA  Result  =\n'
+          f'=================\n'
+          f'Performed {dsa_count} DSA\n'
+          f'Success: {dsa_success}\n'
+          f'Success rate: {dsa_success_rate} %')
 
     return
 
@@ -202,31 +237,45 @@ def fork_blockchain():
         return forked
 
 
-def dsa_auto_mine():
-    print('====== Double Spend Attack Start ======')
+def dsa_auto_mine(attack_start_time):
+    print('\n====== Double Spend Attack Start ======')
     fork_chain_len = 0
     fork_chain_json = ''
     public_chain_len = 0
     public_chain_json = ''
-    dsa_success = False
+    success = False
     following_dsa = False
 
-    while not dsa_success:
+    dsa_start_time = time.time()
+    dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
+    attack_timeout = is_timeout(attack_start_time, time.time(), HOUR)
+
+    while not success:
+        if attack_timeout or dsa_timeout:
+            print(f'dsa_auto_mine timeout : attack_timeout {attack_timeout} : dsa_timeout {dsa_timeout}')
+            break
         if fork_chain_len <= public_chain_len:
-            fork_chain_json, fork_chain_len = fork_chain_add_block()
+            fork_chain_json, fork_chain_len = fork_chain_add_block(attack_start_time, dsa_start_time)
             public_chain_json, public_chain_len = get_blockchain()
-            dsa_success = get_dsa_success()
-            if dsa_success:
+            success = get_dsa_success()
+            if success:
                 following_dsa = True
                 return following_dsa
         else:
-            dsa_success = set_dsa_success()
+            success = set_dsa_success_true()
 
-    print(f'====== Double Spend Attack Complete ======\n'
-          f'Fork chain len: {fork_chain_len}\n'
-          f'{fork_chain_json}\n'
-          f'Public chain len: {public_chain_len}\n'
-          f'{public_chain_json}')
+        attack_timeout = is_timeout(attack_start_time, time.time(), HOUR)
+        dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
+
+    if not attack_timeout and not dsa_timeout:
+        global dsa_success
+        dsa_success += 1
+
+        print(f'====== Double Spend Attack Complete ======\n'
+              f'Fork chain len: {fork_chain_len}\n'
+              f'{fork_chain_json}\n'
+              f'Public chain len: {public_chain_len}\n'
+              f'{public_chain_json}')
 
     return following_dsa
 
@@ -239,9 +288,17 @@ def get_dsa_success():
     return
 
 
-def set_dsa_success():
-    request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/dsa/success/set'
-    response = requests.get(request_url)
+def set_dsa_success_true():
+    request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/dsa/success/set/true'
+    response = requests.post(request_url)
+    if response.status_code == 200:
+        return response.json()['dsa_success']
+    return
+
+
+def set_dsa_success_false():
+    request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/dsa/success/set/false'
+    response = requests.post(request_url)
     if response.status_code == 200:
         return response.json()['dsa_success']
     return
@@ -253,17 +310,24 @@ def dsa_broadcast_fork_chain():
     if response.status_code == 200:
         success_ports = response.json()['success_ports']
         fail_ports = response.json()['fail_ports']
-        print(f'success_ports: {success_ports} ===== fail_ports: {fail_ports}')
+        # print(f'success_ports: {success_ports} ===== fail_ports: {fail_ports}')
 
     return
 
 
-def fork_chain_add_block():
+def fork_chain_add_block(attack_start_time, dsa_start_time):
     added = False
     len = 0
     fork_chain_json = ''
     dsa_transaction_pool = TransactionPool()
+
+    dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
+    attack_timeout = is_timeout(attack_start_time, time.time(), HOUR)
+
     while not added:
+        if attack_timeout or dsa_timeout:
+            print('fork_chain_add_block timeout : attack_timeout {attack_timeout} : dsa_timeout {dsa_timeout}')
+            break
         get_fork_chain_json = get_fork_blockchain()
         if not get_fork_chain_json:
             break
@@ -289,13 +353,16 @@ def fork_chain_add_block():
         else:
             break
 
+        dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
+        attack_timeout = is_timeout(attack_start_time, time.time(), HOUR)
+
     print(potential_block_json)
 
     return fork_chain_json, len
 
 
 def dsa_transaction():
-    print('===== DSA Transaction Start =======')
+    print('\n===== DSA Transaction Start =======')
     recipient = 'DOUBLE SPEND ATTACK'
     amount = 'AMOUNT'
 
@@ -306,9 +373,11 @@ def dsa_transaction():
         recipient,
         amount
     )
-    transaction_pool.add_transaction(transaction)
 
-    mine()
+    tran_pool = TransactionPool()
+    tran_pool.add_transaction(transaction)
+
+    mine(tran_pool)
     broadcast_blockchain()
 
     print('====== DSA Transaction Complete =====')
@@ -369,25 +438,13 @@ def execute_role(choose):
 def normal_role():
     global role
     role = 'Normal'
+    # start_auto_mine()
 
 
 def attack_role():
     global role
-    role = f'Attack Port {TEMP_STORAGE_PORT}'
-
-    # thread = Thread(target=register_attack_port, daemon=True)
-    # thread.start()
-
-
-# def register_attack_port():
-#     attack_port = '8002'
-#     global role
-#     role = f'Attack Port {attack_port}'
-#
-#     request_url = f'http://{HOST}:8001/ports/add/attack/?port={attack_port}'
-#     requests.post(request_url)
-#
-#     app.run(host=HOST, port=int(attack_port), debug=True, use_reloader=False)
+    role = f'Attack'
+    # start_double_spend_attack()
 
 
 def blockchain_info():

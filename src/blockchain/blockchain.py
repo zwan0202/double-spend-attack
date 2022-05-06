@@ -53,21 +53,3 @@ class Blockchain:
     def fork(self):
         if len(self.chain) > 1:
             self.chain = self.chain[:-1]
-
-    # @staticmethod
-    # def register_node(node_url):
-    #     parsed_url = urlparse(node_url)
-    #     if Blockchain.is_port_in_use(parsed_url.hostname, parsed_url.port):
-    #         # 127.0.0.1:5001
-    #         if parsed_url.netloc:
-    #             self.nodes.add(parsed_url.netloc)
-    #         # http://127.0.0.1.5001
-    #         elif parsed_url.path:
-    #             self.nodes.add(parsed_url.path)
-    #         else:
-    #             raise ValueError('Invalid URL')
-    #
-    # @staticmethod
-    # def is_port_in_use(host, port):
-    #     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    #         return s.connect_ex((host, port)) == 0

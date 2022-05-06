@@ -109,13 +109,6 @@ def all_other_ports():
         return ''
 
 
-# @app.before_first_request
-# def register_node():
-#     print('======= register node ========')
-#     request_url = f'http://{HOST}:8001/ports/add/?port={str(server_port)}'
-#     requests.post(request_url)
-
-
 if __name__ == '__main__':
     server_port = randint(5001, 5999)
 

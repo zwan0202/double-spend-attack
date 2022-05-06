@@ -51,19 +51,6 @@ def add_port():
     return jsonify(response)
 
 
-# @app.route('/ports/add/attack/', methods=['POST'])
-# def add_attack_port():
-#     if not attack_port:
-#         port = request.args.get('port')
-#         attack_ports.add(port)
-#
-#     response = {
-#         'attack_port': next(iter(attack_port))
-#     }
-#
-#     return jsonify(response)
-
-
 @app.route('/chain/fork', methods=['POST'])
 def fork_blockchain():
     global fork_chain
@@ -93,28 +80,30 @@ def get_fork_chain():
         }
         return jsonify(response)
 
-    return jsonify({'fork_chain': None})
+    return jsonify({'fork_chain': None, 'len': 0})
 
 
 @app.route('/chain/fork/clear')
 def clear_fork_chain():
     global fork_chain
-    fork_chain = None
+    if fork_chain:
+        fork_chain = None
 
-    return jsonify('')
+    return jsonify({'fork_chain': None})
 
 
 @app.route('/chain/fork/add/block', methods=['POST'])
 def fork_chain_add_block():
     response = {}
-    potential_block_json = request.get_json()
+    if fork_chain:
+        potential_block_json = request.get_json()
 
-    if fork_chain.add_block(Block.from_json(potential_block_json)):
-        response['added'] = True
-    else:
-        response['added'] = False
-    response['len'] = len(fork_chain.chain)
-    response['fork_chain'] = fork_chain.to_json()
+        if fork_chain.add_block(Block.from_json(potential_block_json)):
+            response['added'] = True
+        else:
+            response['added'] = False
+        response['len'] = len(fork_chain.chain)
+        response['fork_chain'] = fork_chain.to_json()
 
     return jsonify(response)
 
@@ -125,15 +114,15 @@ def broadcast_chain():
         'success_ports': [],
         'fail_ports': []
     }
-
-    for port in ports:
-        url = f'http://{HOST}:{port}/chain/resolve'
-        response = requests.post(url, json=fork_chain.to_json())
-        if response.status_code == 200:
-            if response.json()['success']:
-                bc_response['success_ports'].append(port)
-            else:
-                bc_response['fail_ports'].append(port)
+    if fork_chain:
+        for port in ports:
+            url = f'http://{HOST}:{port}/chain/resolve'
+            response = requests.post(url, json=fork_chain.to_json())
+            if response.status_code == 200:
+                if response.json()['success']:
+                    bc_response['success_ports'].append(port)
+                else:
+                    bc_response['fail_ports'].append(port)
 
     return jsonify(bc_response)
 
@@ -143,10 +132,18 @@ def get_dsa_success():
     return jsonify({'dsa_success': dsa_success})
 
 
-@app.route('/dsa/success/set')
-def set_dsa_success():
+@app.route('/dsa/success/set/true', methods=['POST'])
+def set_dsa_success_true():
     global dsa_success
     dsa_success = True
+
+    return jsonify({'dsa_success': dsa_success})
+
+
+@app.route('/dsa/success/set/false', methods=['POST'])
+def set_dsa_success_false():
+    global dsa_success
+    dsa_success = False
 
     return jsonify({'dsa_success': dsa_success})
 
