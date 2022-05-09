@@ -438,13 +438,13 @@ def execute_role(choose):
 def normal_role():
     global role
     role = 'Normal'
-    # start_auto_mine()
+    start_auto_mine()
 
 
 def attack_role():
     global role
     role = f'Attack'
-    # start_double_spend_attack()
+    double_spend_attack()
 
 
 def blockchain_info():
