@@ -191,6 +191,8 @@ def is_timeout(start_time, curr_time, timeout):
 
 
 def double_spend_attack():
+    set_main_attacker('true')
+
     attack_start_time = time.time()
     timeout = is_timeout(attack_start_time, time.time(), HOUR)
 
@@ -208,18 +210,19 @@ def double_spend_attack():
         if not following_dsa:
             dsa_broadcast_fork_chain()
             clear_fork_chain()
-            set_dsa_success_false()
+            set_dsa_success('false')
 
         dsa_count += 1
         timeout = is_timeout(attack_start_time, time.time(), HOUR)
 
-    dsa_success_rate = round(dsa_success / dsa_count * 100, 2)
-    print(f'\n================\n'
-          f'=  DSA  Result  =\n'
-          f'=================\n'
-          f'Performed {dsa_count} DSA\n'
-          f'Success: {dsa_success}\n'
-          f'Success rate: {dsa_success_rate} %')
+    if get_main_attacker():
+        dsa_success_rate = round(dsa_success / dsa_count * 100, 2)
+        print(f'\n================\n'
+              f'=  DSA  Result  =\n'
+              f'=================\n'
+              f'Performed {dsa_count} DSA\n'
+              f'Success: {dsa_success}\n'
+              f'Success rate: {dsa_success_rate} %')
 
     return
 
@@ -262,7 +265,7 @@ def dsa_auto_mine(attack_start_time):
                 following_dsa = True
                 return following_dsa
         else:
-            success = set_dsa_success_true()
+            success = set_dsa_success('ture')
 
         attack_timeout = is_timeout(attack_start_time, time.time(), HOUR)
         dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
@@ -280,6 +283,22 @@ def dsa_auto_mine(attack_start_time):
     return following_dsa
 
 
+def get_main_attacker():
+    request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/main/attacker'
+    response = requests.get(request_url)
+    if response.status_code == 200:
+        return response.json()['main_attacker']
+    return
+
+
+def set_main_attacker(is_main):
+    request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/main/attacker/set/{is_main}'
+    response = requests.post(request_url)
+    if response.status_code == 200:
+        return response.json()['main_attacker']
+    return
+
+
 def get_dsa_success():
     request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/dsa/success'
     response = requests.get(request_url)
@@ -288,16 +307,8 @@ def get_dsa_success():
     return
 
 
-def set_dsa_success_true():
-    request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/dsa/success/set/true'
-    response = requests.post(request_url)
-    if response.status_code == 200:
-        return response.json()['dsa_success']
-    return
-
-
-def set_dsa_success_false():
-    request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/dsa/success/set/false'
+def set_dsa_success(success):
+    request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/dsa/success/set/{success}'
     response = requests.post(request_url)
     if response.status_code == 200:
         return response.json()['dsa_success']

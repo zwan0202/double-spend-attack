@@ -22,6 +22,7 @@ ports = set()
 attack_ports = set()
 fork_chain = None
 dsa_success = False
+main_attacker = set()
 
 
 @app.route('/ports/all')
@@ -49,6 +50,15 @@ def add_port():
     response = {'port': port}
 
     return jsonify(response)
+
+
+def register_port(port):
+    # if is_port_in_use(port):
+    #     ports.add(port)
+    #     print(f'add port {port}')
+    # else:
+    #     print(f'port {port} not in use')
+    ports.add(port)
 
 
 @app.route('/chain/fork', methods=['POST'])
@@ -148,13 +158,25 @@ def set_dsa_success_false():
     return jsonify({'dsa_success': dsa_success})
 
 
-def register_port(port):
-    # if is_port_in_use(port):
-    #     ports.add(port)
-    #     print(f'add port {port}')
-    # else:
-    #     print(f'port {port} not in use')
-    ports.add(port)
+@app.route('/main/attacker')
+def get_main_attacker():
+    return jsonify({'main_attacker': len(main_attacker) == 1})
+
+
+@app.route('/main/attacker/set/true', methods=['POST'])
+def set_main_attacker_true():
+    global main_attacker
+    main_attacker.add('true')
+
+    return jsonify({'main_attacker': len(main_attacker) == 1})
+
+
+@app.route('/main/attacker/set/false', methods=['POST'])
+def set_main_attacker_false():
+    global main_attacker
+    main_attacker = set()
+
+    return jsonify({'main_attacker': len(main_attacker) == 1})
 
 
 if __name__ == '__main__':
