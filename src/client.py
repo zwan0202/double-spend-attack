@@ -19,7 +19,7 @@ from src.blockchain.blockchain import Blockchain
 from src.blockchain.block import Block
 from src.wallet.wallet import Wallet
 from src.wallet.transaction import (Transaction, TransactionPool)
-from src.constant import HOST, TEMP_STORAGE_PORT, MINING_REWARD_INPUT, HOUR, DSA_TIMEOUT
+from src.constant import HOST, TEMP_STORAGE_PORT, MINING_REWARD_INPUT, DSA_DURATION, DSA_TIMEOUT
 
 
 app = Flask(__name__)
@@ -194,7 +194,7 @@ def double_spend_attack():
     set_main_attacker('true')
 
     attack_start_time = time.time()
-    timeout = is_timeout(attack_start_time, time.time(), HOUR)
+    timeout = is_timeout(attack_start_time, time.time(), DSA_DURATION)
 
     global dsa_count, dsa_success
     dsa_count = 0
@@ -213,7 +213,7 @@ def double_spend_attack():
             set_dsa_success('false')
 
         dsa_count += 1
-        timeout = is_timeout(attack_start_time, time.time(), HOUR)
+        timeout = is_timeout(attack_start_time, time.time(), DSA_DURATION)
 
     if get_main_attacker():
         dsa_success_rate = round(dsa_success / dsa_count * 100, 2)
@@ -251,7 +251,7 @@ def dsa_auto_mine(attack_start_time):
 
     dsa_start_time = time.time()
     dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
-    attack_timeout = is_timeout(attack_start_time, time.time(), HOUR)
+    attack_timeout = is_timeout(attack_start_time, time.time(), DSA_DURATION)
 
     while not success:
         if attack_timeout or dsa_timeout:
@@ -267,7 +267,7 @@ def dsa_auto_mine(attack_start_time):
         else:
             success = set_dsa_success('ture')
 
-        attack_timeout = is_timeout(attack_start_time, time.time(), HOUR)
+        attack_timeout = is_timeout(attack_start_time, time.time(), DSA_DURATION)
         dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
 
     if not attack_timeout and not dsa_timeout:
@@ -333,7 +333,7 @@ def fork_chain_add_block(attack_start_time, dsa_start_time):
     dsa_transaction_pool = TransactionPool()
 
     dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
-    attack_timeout = is_timeout(attack_start_time, time.time(), HOUR)
+    attack_timeout = is_timeout(attack_start_time, time.time(), DSA_DURATION)
 
     while not added:
         if attack_timeout or dsa_timeout:
@@ -365,7 +365,7 @@ def fork_chain_add_block(attack_start_time, dsa_start_time):
             break
 
         dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
-        attack_timeout = is_timeout(attack_start_time, time.time(), HOUR)
+        attack_timeout = is_timeout(attack_start_time, time.time(), DSA_DURATION)
 
     print(potential_block_json)
 
@@ -458,6 +458,11 @@ def attack_role():
     double_spend_attack()
 
 
+def observer_role():
+    global role
+    role = f'Observer'
+
+
 def blockchain_info():
     chain_json, len = get_blockchain()
     print(f'====== Get Blockchain =======\n'
@@ -481,7 +486,8 @@ menu_actions = {
 
 role_option = {
     '1': normal_role,
-    '2': attack_role
+    '2': attack_role,
+    '3': observer_role
 }
 
 

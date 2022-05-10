@@ -13,7 +13,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from src.blockchain.blockchain import Blockchain
 from src.blockchain.block import Block
-from src.constant import HOST
+from src.constant import HOST, TEMP_STORAGE_PORT
 
 
 app = Flask(__name__)
@@ -180,4 +180,4 @@ def set_main_attacker_false():
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8001, debug=True)
+    app.run(host=HOST, port=int(TEMP_STORAGE_PORT), debug=True)

@@ -1,10 +1,19 @@
+class IPAdrr:
+    def __init__(self):
+        import socket
+
+        hostname = socket.gethostname()
+        self.ip = socket.gethostbyname(hostname)
+
 SECONDS = 1
-HOUR = 60 * SECONDS
+
+DSA_DURATION = 60 * SECONDS
 DSA_TIMEOUT = 10 * SECONDS
 
 DIFFICULTY = 16
 
-HOST = '127.0.0.1'
+# replace with host ip
+HOST = ''
 TEMP_STORAGE_PORT = '8001'
 
 # adjusted difficulty

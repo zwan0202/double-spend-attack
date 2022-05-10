@@ -26,19 +26,27 @@ This will install all dependencies required to run the python server.
 
 ## Run
 
-- Temp storage manager for data exchange (run once)
+### Config IP address
+
+```bash
+ipconfig
+```
+
+Change the `HOST` inside `constant.py` to a IP that works for you
+
+### Temp storage manager for data exchange (run once)
 
 ```bash
 python temp_storage_manager.py
 ```
 
-- Blockchain node
+### Blockchain node
 
 ```bash
 python server.py
 ```
 
-- User
+### User
 
 ```bash
 python client.py
@@ -52,9 +60,14 @@ After running `client.py`
 
 - For attacker, select `2` to perform double spend attack, runs `1` hour
 
+- For observer, select `3` to do manual operation
+
 ### Config
 
 In `constant.py`
+
+- `DSA_DURATION` : Set duration of double spend attack in `second`, will stop
+DSA after timeout
 
 - `DSA_TIMEOUT` : Set double spend attack timeout in `second`, will terminate current DSA
  and start a new one
