@@ -73,3 +73,5 @@ DSA after timeout
  and start a new one
 
 - `DIFFICULTY` : Difficulty for PoW
+
+- `HOST` : Replace with host ip if connect from guest device
