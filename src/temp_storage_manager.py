@@ -93,6 +93,17 @@ def get_fork_chain():
     return jsonify({'fork_chain': None, 'len': 0})
 
 
+@app.route('/length')
+def get_fork_chain_len():
+    if fork_chain:
+        response = {
+            'len': len(fork_chain.chain)
+        }
+        return jsonify(response)
+
+    return jsonify({'len': 0})
+
+
 @app.route('/chain/fork/clear')
 def clear_fork_chain():
     global fork_chain
@@ -180,4 +191,4 @@ def set_main_attacker_false():
 
 
 if __name__ == '__main__':
-    app.run(host=HOST, port=int(TEMP_STORAGE_PORT), debug=True)
+    app.run(host=HOST, port=int(TEMP_STORAGE_PORT), debug=False)

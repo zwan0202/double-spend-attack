@@ -17,6 +17,7 @@ from flask import Flask
 from flask_cors import CORS
 from src.blockchain.blockchain import Blockchain
 from src.blockchain.block import Block
+from src.blockchain.chain_manager import ChainManager
 from src.wallet.wallet import Wallet
 from src.wallet.transaction import (Transaction, TransactionPool)
 from src.constant import HOST, TEMP_STORAGE_PORT, MINING_REWARD_INPUT, DSA_DURATION, DSA_TIMEOUT
@@ -30,6 +31,7 @@ port = ''
 role = ''
 dsa_success = 0
 dsa_count = 0
+chainManager = ChainManager(0)
 transaction_pool = TransactionPool()
 wallet = Wallet()
 exit_event = Event()
@@ -107,16 +109,15 @@ def mine(tran_pool=None):
 
         transactions = tran_pool.all_transactions()
 
-        potential_block = Block.mine_block(blockchain.chain[-1], transactions, wallet.public_key)
+        potential_block = Block.mine_block(blockchain.chain[-1], transactions, wallet.public_key, False, port)
 
-        request_url = f'http://{HOST}:{port}/chain/add/block'
-        potential_block_json = potential_block.to_json()
-        response = requests.post(request_url, json=potential_block_json)
+        if potential_block:
+            request_url = f'http://{HOST}:{port}/chain/add/block'
+            potential_block_json = potential_block.to_json()
+            response = requests.post(request_url, json=potential_block_json)
 
-        if response.status_code == 200:
-            added = response.json()['added']
-        else:
-            break
+            if response.status_code == 200:
+                added = response.json()['added']
 
     print(Block.from_json(potential_block_json))
     tran_pool.clear_transactions()
@@ -357,7 +358,7 @@ def fork_chain_add_block(attack_start_time, dsa_start_time):
 
         transactions = dsa_transaction_pool.all_transactions()
 
-        potential_block = Block.mine_block(fork_chain.chain[-1], transactions, wallet.public_key)
+        potential_block = Block.mine_block(fork_chain.chain[-1], transactions, wallet.public_key, True, TEMP_STORAGE_PORT)
 
         request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/chain/fork/add/block'
         potential_block_json = potential_block.to_json()
@@ -455,13 +456,13 @@ def execute_role(choose):
 def normal_role():
     global role
     role = 'Normal'
-    start_auto_mine()
+    # start_auto_mine()
 
 
 def attack_role():
     global role
     role = f'Attack'
-    double_spend_attack()
+    # double_spend_attack()
 
 
 def observer_role():

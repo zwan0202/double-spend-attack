@@ -15,10 +15,11 @@ class IPAdrr:
 
 SECONDS = 1
 
+UPDATE_DURATION = 5 * SECONDS
 DSA_DURATION = 60 * SECONDS
 DSA_TIMEOUT = 10 * SECONDS
 
-DIFFICULTY = 16
+DIFFICULTY = 20
 
 # replace with host ip if connect from guest device
 HOST = IPAdrr().ip

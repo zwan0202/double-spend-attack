@@ -1,6 +1,8 @@
 import time
+import requests
 import src.util as util
-from src.constant import DIFFICULTY, MINE_RATE
+from src.blockchain.chain_manager import ChainManager
+from src.constant import DIFFICULTY, MINE_RATE, HOST, UPDATE_DURATION
 
 GENESIS_DATA = {
     'timestamp': 0,
@@ -50,22 +52,46 @@ class Block:
         return Block(**block_json)
 
     @staticmethod
-    def mine_block(last_block, transactions, public_key):
+    def mine_block(last_block, transactions, public_key, is_fork, port):
         timestamp = time.time_ns()
         block_idx = last_block.block_idx + 1
         nonce = 0
         last_hash = last_block.block_hash
         block_hash = util.crypto_hash(timestamp, block_idx, nonce, last_hash, transactions, public_key)
 
+        chain_manger = ChainManager(Block.get_chain_len(port))
+        s = time.time()
+        e = time.time()
+
         while Block.not_meet_difficulty(block_hash):
+            if not is_fork:
+                d = e - s
+                if d > UPDATE_DURATION:
+                    if chain_manger.is_updated(Block.get_chain_len(port)):
+                        # print('Chain changed ')
+                        return None
+                    s = time.time()
             nonce += 1
             block_hash = util.crypto_hash(timestamp, block_idx, nonce, last_hash, transactions, public_key)
+            e = time.time()
 
         return Block(timestamp, block_idx, last_hash, block_hash, transactions, nonce, public_key)
 
     @staticmethod
     def not_meet_difficulty(block_hash):
         return util.hex_to_binary(block_hash)[0:DIFFICULTY] != '0' * DIFFICULTY
+
+    @staticmethod
+    def get_chain_len(port):
+        request_url = f'http://{HOST}:{port}/length'
+        response = requests.get(request_url)
+        if response.status_code == 200:
+            len = response.json()['len']
+            return len
+        else:
+            print(f'Error in port {port}')
+
+        return 0
 
     @staticmethod
     def adjust_difficulty(last_block, new_timestamp):

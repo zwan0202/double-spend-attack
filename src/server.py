@@ -38,7 +38,7 @@ def chain():
 
 @app.route('/length')
 def chain_length():
-    return jsonify(len(blockchain.chain))
+    return jsonify({'len': len(blockchain.chain)})
 
 
 @app.route('/chain/add/block', methods=['POST'])
