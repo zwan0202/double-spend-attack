@@ -6,6 +6,9 @@ class Blockchain:
     def __init__(self):
         self.chain = [Block.genesis()]
 
+    def __repr__(self):
+        return f'Blockchain: {self.chain}'
+
     def to_json(self):
         return list(map(lambda block: block.to_json(), self.chain))
 

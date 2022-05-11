@@ -26,6 +26,18 @@ class Block:
     def __eq__(self, other):
         return self.block_hash == other.block_hash
 
+    def __repr__(self):
+        return (
+            '{'
+            f'index: {self.block_idx}, '
+            f'hash: {self.block_hash}, '
+            f'last_hash: {self.last_hash}, '
+            f'nonce: {self.nonce}, '
+            f'timestamp: {self.timestamp}, '
+            f'transactions: {self.transactions}'
+            '}'
+        )
+
     @staticmethod
     def genesis():
         return Block(**GENESIS_DATA)

@@ -34,6 +34,7 @@ transaction_pool = TransactionPool()
 wallet = Wallet()
 exit_event = Event()
 threads = {}
+res = []
 
 
 def main_menu():
@@ -117,7 +118,7 @@ def mine(tran_pool=None):
         else:
             break
 
-    print(potential_block_json)
+    print(Block.from_json(potential_block_json))
     tran_pool.clear_transactions()
 
     return
@@ -217,12 +218,16 @@ def double_spend_attack():
 
     if get_main_attacker():
         dsa_success_rate = round(dsa_success / dsa_count * 100, 2)
-        print(f'\n================\n'
-              f'=  DSA  Result  =\n'
-              f'=================\n'
-              f'Performed {dsa_count} DSA\n'
-              f'Success: {dsa_success}\n'
-              f'Success rate: {dsa_success_rate} %')
+        res.append('=================\n'
+                   '=  DSA  Result  =\n'
+                   '=================\n'
+                   f'Performed {dsa_count} DSA\n'
+                   f'Success: {dsa_success}\n'
+                   f'Success rate: {dsa_success_rate} %')
+
+        with open("result.txt", "w") as f:
+            for r in res:
+                f.write(r)
 
     return
 
@@ -241,6 +246,8 @@ def fork_blockchain():
 
 
 def dsa_auto_mine(attack_start_time):
+    global dsa_count, dsa_success
+
     print('\n====== Double Spend Attack Start ======')
     fork_chain_len = 0
     fork_chain_json = ''
@@ -265,20 +272,19 @@ def dsa_auto_mine(attack_start_time):
                 following_dsa = True
                 return following_dsa
         else:
-            success = set_dsa_success('ture')
+            success = set_dsa_success('true')
 
         attack_timeout = is_timeout(attack_start_time, time.time(), DSA_DURATION)
         dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
 
     if not attack_timeout and not dsa_timeout:
-        global dsa_success
         dsa_success += 1
+        r = '====== Double Spend Attack Complete ======\n'
+    else:
+        r = '====== Double Spend Attack Timeout ======\n'
 
-        print(f'====== Double Spend Attack Complete ======\n'
-              f'Fork chain len: {fork_chain_len}\n'
-              f'{fork_chain_json}\n'
-              f'Public chain len: {public_chain_len}\n'
-              f'{public_chain_json}')
+    r += f'Current try: {dsa_count + 1}\nFork chain len: {fork_chain_len}\n{Blockchain.from_json(fork_chain_json)}\nPublic chain len: {public_chain_len}\n{Blockchain.from_json(public_chain_json)}\n\n'
+    res.append(r)
 
     return following_dsa
 
@@ -367,7 +373,7 @@ def fork_chain_add_block(attack_start_time, dsa_start_time):
         dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
         attack_timeout = is_timeout(attack_start_time, time.time(), DSA_DURATION)
 
-    print(potential_block_json)
+    print(Block.from_json(potential_block_json))
 
     return fork_chain_json, len
 
