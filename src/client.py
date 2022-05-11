@@ -218,14 +218,14 @@ def double_spend_attack():
 
     if get_main_attacker():
         dsa_success_rate = round(dsa_success / dsa_count * 100, 2)
-        res.append('=================\n'
-                   '=  DSA  Result  =\n'
-                   '=================\n'
-                   f'Performed {dsa_count} DSA\n'
+        res.append('=========================================\n'
+                   '=               DSA  Result             =\n'
+                   '=========================================\n'
+                   f'Total DSA Performed: {dsa_count}\n'
                    f'Success: {dsa_success}\n'
                    f'Success rate: {dsa_success_rate} %')
 
-        with open("result.txt", "w") as f:
+        with open("../result.txt", "w") as f:
             for r in res:
                 f.write(r)
 
