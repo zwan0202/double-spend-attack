@@ -360,16 +360,17 @@ def fork_chain_add_block(attack_start_time, dsa_start_time):
 
         potential_block = Block.mine_block(fork_chain.chain[-1], transactions, wallet.public_key, True, TEMP_STORAGE_PORT)
 
-        request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/chain/fork/add/block'
-        potential_block_json = potential_block.to_json()
-        response = requests.post(request_url, json=potential_block_json)
+        if potential_block:
+            request_url = f'http://{HOST}:{TEMP_STORAGE_PORT}/chain/fork/add/block'
+            potential_block_json = potential_block.to_json()
+            response = requests.post(request_url, json=potential_block_json)
 
-        if response.status_code == 200:
-            added = response.json()['added']
-            len = response.json()['len']
-            fork_chain_json = response.json()['fork_chain']
-        else:
-            break
+            if response.status_code == 200:
+                added = response.json()['added']
+                len = response.json()['len']
+                fork_chain_json = response.json()['fork_chain']
+            else:
+                break
 
         dsa_timeout = is_timeout(dsa_start_time, time.time(), DSA_TIMEOUT)
         attack_timeout = is_timeout(attack_start_time, time.time(), DSA_DURATION)
